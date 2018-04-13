@@ -28,6 +28,9 @@ define('PLAGIARISM_TURNITIN_CRON_SUBMISSIONS_LIMIT', 100);
 define('PLAGIARISM_TURNITIN_REPORT_GEN_SPEED_NUM_RESUBMISSIONS', 3);
 define('PLAGIARISM_TURNITIN_REPORT_GEN_SPEED_NUM_HOURS', 24);
 
+define('PLAGIARISM_TURNITIN_DEFAULT_PSEUDO_DOMAIN', '@tiimoodle.com');
+define('PLAGIARISM_TURNITIN_DEFAULT_PSEUDO_FIRSTNAME', get_string('defaultcoursestudent'));
+
 // Define accepted files if the module is not accepting any file type.
 global $turnitinacceptedfiles;
 $turnitinacceptedfiles = array('.doc', '.docx', '.ppt', '.pptx', '.pps', '.ppsx',
