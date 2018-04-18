@@ -104,6 +104,13 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
     }
 
     /**
+     * @return mixed the admin config settings for the plugin
+     */
+    public static function plagiarism_turnitin_admin_config() {
+        return get_config('plagiarism');
+    }
+
+    /**
      * Get the Turnitin settings for a module
      *
      * @param int $cm_id - the course module id, if this is 0 the default settings will be retrieved
@@ -184,8 +191,11 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
      * @return boolean whether the plugin is configured for Turnitin.
      **/
     public function is_plugin_configured() {
-        $config = turnitintooltwo_admin_config();
-        if (empty($config->accountid) || empty($config->apiurl) || empty($config->secretkey)) {
+        $config = $this->plagiarism_turnitin_admin_config();
+
+        if (empty($config->plagiarism_turnitin_accountid) ||
+            empty($config->plagiarism_turnitin_apiurl) ||
+            empty($config->plagiarism_turnitin_secretkey)) {
             return false;
         }
 
@@ -426,7 +436,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
 
         static $tiiconnection;
 
-        $config = turnitintooltwo_admin_config();
+        $config = $this->plagiarism_turnitin_admin_config();
         $output = '';
 
         // Get course details.
@@ -456,8 +466,8 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         }
 
         // Show agreement.
-        if (!empty($config->agreement)) {
-            $contents = format_text($config->agreement, FORMAT_MOODLE, array("noclean" => true));
+        if (!empty($config->plagiarism_turnitin_agreement)) {
+            $contents = format_text($config->plagiarism_turnitin_agreement, FORMAT_MOODLE, array("noclean" => true));
             $output .= $OUTPUT->box($contents, 'generalbox boxaligncenter', 'intro');
         }
 
@@ -509,7 +519,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
             }
         }
 
-        if ($config->usegrademark && !empty($plagiarismsettings["plagiarism_rubric"])) {
+        if ($config->plagiarism_turnitin_usegrademark && !empty($plagiarismsettings["plagiarism_rubric"])) {
 
             // Update assignment in case rubric is not stored in Turnitin yet.
             $this->sync_tii_assignment($cm, $coursedata->turnitin_cid);
@@ -632,7 +642,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
 
         static $config;
         if (empty($config)) {
-            $config = turnitintooltwo_admin_config();
+            $config = $this->plagiarism_turnitin_admin_config();
         }
 
         static $moduletiienabled;
@@ -671,7 +681,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         }
 
         // Define the timestamp for updating Peermark Assignments.
-        if (empty($_SESSION["updated_pm"][$cm->id]) && $config->enablepeermark) {
+        if (empty($_SESSION["updated_pm"][$cm->id]) && $config->plagiarism_turnitin_enablepeermark) {
             $_SESSION["updated_pm"][$cm->id] = (time() - (60 * 5));
         }
 
@@ -936,7 +946,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                         $released = ((!$blindon) && ($gradesreleased && (!empty($plagiarismfile->gm_feedback) || isset($currentgradequery->grade))));
 
                         // Show link to open grademark.
-                        if ($config->usegrademark && ($istutor || ($linkarray["userid"] == $USER->id && $released))
+                        if ($config->plagiarism_turnitin_usegrademark && ($istutor || ($linkarray["userid"] == $USER->id && $released))
                                  && !empty($gradeitem)) {
 
                             // Output grademark icon.
@@ -975,7 +985,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                         }
 
                         // Show link to view rubric for student.
-                        if (!$istutor && $config->usegrademark && !empty($plagiarismsettings["plagiarism_rubric"])) {
+                        if (!$istutor && $config->plagiarism_turnitin_usegrademark && !empty($plagiarismsettings["plagiarism_rubric"])) {
                             // Update assignment in case rubric is not stored in Turnitin yet.
                             $this->sync_tii_assignment($cm, $coursedata->turnitin_cid);
 
@@ -990,7 +1000,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                             $output .= $rubricviewlink;
                         }
 
-                        if ($config->enablepeermark) {
+                        if ($config->plagiarism_turnitin_enablepeermark) {
                             // If this module is already on Turnitin then refresh and get Peermark Assignments.
                             if (!empty($plagiarismsettings['turnitin_assignid'])) {
                                 if ($_SESSION["updated_pm"][$cm->id] <= (time() - (60 * 2))) {
@@ -1645,7 +1655,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
     public function sync_tii_assignment($cm, $coursetiiid, $workflowcontext = "site", $submittoturnitin = false) {
         global $DB;
 
-        $config = turnitintooltwo_admin_config();
+        $config = $this->plagiarism_turnitin_admin_config();
         $modulepluginsettings = $this->get_settings($cm->id);
         $moduledata = $DB->get_record($cm->modname, array('id' => $cm->instance));
 
@@ -1668,7 +1678,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         $reposetting = (isset($modulepluginsettings["plagiarism_submitpapersto"])) ? $modulepluginsettings["plagiarism_submitpapersto"] : 1;
 
         // Override if necessary when admin is forcing standard/no repository.
-        switch ($config->repositoryoption) {
+        switch ($config->plagiarism_turnitin_repositoryoption) {
             case 2; // Standard repository being forced.
                 $reposetting = 1;
                 break;
@@ -1681,7 +1691,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         $assignment->setSubmittedDocumentsCheck($modulepluginsettings["plagiarism_compare_student_papers"]);
         $assignment->setInternetCheck($modulepluginsettings["plagiarism_compare_internet"]);
         $assignment->setPublicationsCheck($modulepluginsettings["plagiarism_compare_journals"]);
-        if ($config->repositoryoption == 1) {
+        if ($config->plagiarism_turnitin_repositoryoption == 1) {
             $institutioncheck = (isset($modulepluginsettings["plagiarism_compare_institution"])) ? $modulepluginsettings["plagiarism_compare_institution"] : 0;
             $assignment->setInstitutionCheck($institutioncheck);
         }
@@ -1702,7 +1712,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                                                             array('cm' => $cm->id, 'statuscode' => 'success'));
 
         // Use Moodle's blind marking setting for anonymous marking.
-        if ($config->useanon && !$previoussubmissions) {
+        if ($config->plagiarism_turnitin_useanon && !$previoussubmissions) {
             $anonmarking = (!empty($moduledata->blindmarking)) ? 1 : 0;
             $assignment->setAnonymousMarking($anonmarking);
         }
@@ -2639,17 +2649,14 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
      * Set a config value for the admin settings.
      */
     public static function plagiarism_set_config($data, $property) {
-        if (!empty($data->$property)) {
-
-            // Scenario when performing the upgrade script to copy settings from V2 to PP.
-            if (strpos($property, 'plagiarism_') === false) {
-                $field = "plagiarism_".$property;
-            } else {
-                $field = $property;
-            }
-
-            set_config($field, $data->$property, 'plagiarism');
+        // Scenario when performing the upgrade script to copy settings from V2 to PP.
+        if (strpos($property, 'plagiarism_turnitin') === false) {
+            $field = "plagiarism_turnitin_".$property;
+        } else {
+            $field = $property;
         }
+
+        set_config($field, $data->$property, 'plagiarism');
     }
 }
 
@@ -2666,7 +2673,7 @@ function plagiarism_turnitin_update_reports() {
  */
 function plagiarism_turnitin_send_queued_submissions() {
     global $DB;
-    $config = turnitintooltwo_admin_config();
+    $config = $this->plagiarism_turnitin_admin_config();
     $pluginturnitin = new plagiarism_plugin_turnitin();
 
     $queueditems = $DB->get_records_select("plagiarism_turnitin_files", "statuscode = 'queued' OR statuscode = 'pending'",
@@ -2877,7 +2884,7 @@ function plagiarism_turnitin_send_queued_submissions() {
         );
 
         // Only include user's name and id if we're not using blind marking and student privacy.
-        if ( empty($moduledata->blindmarking) && empty($config->enablepseudo) ) {
+        if ( empty($moduledata->blindmarking) && empty($config->plagiarism_turnitin_enablepseudo) ) {
             $userdetails = array(
                 $user->id,
                 $user->firstname,
